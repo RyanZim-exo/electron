@@ -24,28 +24,9 @@ echo "127.0.0.1 electron-test" >> /etc/hosts
 cat /proc/sys/kernel/random/uuid | tr -d '-' > /etc/machine-id
 
 echo "Configuring network"
-# QEMU user-mode networking provides DHCP at 10.0.2.2 and DNS at 10.0.2.3
-# net.ifnames=0 kernel param means the interface is eth0
-if command -v ip >/dev/null 2>&1; then
-	ip link set lo up
-	ip link set eth0 up
-	if command -v dhclient >/dev/null 2>&1; then
-		dhclient eth0
-	else
-		ip addr add 10.0.2.15/24 dev eth0
-		ip route add default via 10.0.2.2
-	fi
-elif command -v ifconfig >/dev/null 2>&1; then
-	ifconfig lo up
-	ifconfig eth0 10.0.2.15 netmask 255.255.255.0 up
-	route add default gw 10.0.2.2
-else
-	echo "WARNING: No ip or ifconfig found, trying sysfs for network config"
-	# Minimal fallback: write directly to sysfs to bring interfaces up
-	echo 1 > /sys/class/net/lo/flags 2>/dev/null || true
-	echo 1 > /sys/class/net/eth0/flags 2>/dev/null || true
-fi
-# Configure DNS resolver (QEMU SLIRP DNS forwarder)
+# Network interface (eth0) is configured by the kernel ip= boot parameter.
+# We only need to set up DNS here.
+# QEMU SLIRP provides a DNS forwarder at 10.0.2.3
 echo "nameserver 10.0.2.3" > /etc/resolv.conf
 echo "Network configuration complete"
 

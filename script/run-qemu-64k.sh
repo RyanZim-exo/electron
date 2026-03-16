@@ -80,7 +80,7 @@ timeout 1800 qemu-system-aarch64 \
 	-m 4096 \
 	-smp 2 \
 	-kernel "$VMLINUZ" \
-	-append "console=ttyAMA0 root=/dev/vda rw init=/init net.ifnames=0 panic=1" \
+	-append "console=ttyAMA0 root=/dev/vda rw init=/init net.ifnames=0 panic=1 ip=10.0.2.15::10.0.2.2:255.255.255.0:electron-test:eth0:off" \
 	-drive file="$DISK_IMG",format=raw,if=virtio \
 	-virtfs local,path="$TESTFILES",mount_tag=testfiles,security_model=none,id=testfiles \
 	-netdev user,id=net0 \
