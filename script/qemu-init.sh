@@ -15,6 +15,8 @@ mkdir -p /run/user/0
 chmod 700 /run/user/0
 mount -t tmpfs tmpfs /var/tmp
 
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
 echo "Setting up hostname and machine-id for D-Bus"
 echo "electron-test" > /etc/hostname
 hostname electron-test
@@ -22,30 +24,34 @@ echo "127.0.0.1 electron-test" >> /etc/hosts
 cat /proc/sys/kernel/random/uuid | tr -d '-' > /etc/machine-id
 
 echo "Configuring network"
-ip link set lo up
 # QEMU user-mode networking provides DHCP at 10.0.2.2 and DNS at 10.0.2.3
-# Find the virtio network interface and configure it via DHCP
-for iface in /sys/class/net/*/; do
-	iface=$(basename "$iface")
-	[ "$iface" = "lo" ] && continue
-	ip link set "$iface" up
-	# Try dhclient first, fall back to manual configuration
+# net.ifnames=0 kernel param means the interface is eth0
+if command -v ip >/dev/null 2>&1; then
+	ip link set lo up
+	ip link set eth0 up
 	if command -v dhclient >/dev/null 2>&1; then
-		dhclient "$iface"
+		dhclient eth0
 	else
-		ip addr add 10.0.2.15/24 dev "$iface"
+		ip addr add 10.0.2.15/24 dev eth0
 		ip route add default via 10.0.2.2
 	fi
-	break
-done
+elif command -v ifconfig >/dev/null 2>&1; then
+	ifconfig lo up
+	ifconfig eth0 10.0.2.15 netmask 255.255.255.0 up
+	route add default gw 10.0.2.2
+else
+	echo "WARNING: No ip or ifconfig found, trying sysfs for network config"
+	# Minimal fallback: write directly to sysfs to bring interfaces up
+	echo 1 > /sys/class/net/lo/flags 2>/dev/null || true
+	echo 1 > /sys/class/net/eth0/flags 2>/dev/null || true
+fi
 # Configure DNS resolver (QEMU SLIRP DNS forwarder)
 echo "nameserver 10.0.2.3" > /etc/resolv.conf
+echo "Network configuration complete"
 
 echo "Setting system clock"
 date -s "$(cat /host-time)"
 
-
-export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 export XDG_RUNTIME_DIR=/run/user/0
 
 echo "Starting entrypoint"
