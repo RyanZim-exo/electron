@@ -22,6 +22,7 @@ echo "127.0.0.1 electron-test" >> /etc/hosts
 cat /proc/sys/kernel/random/uuid | tr -d '-' > /etc/machine-id
 
 echo "Configuring network"
+ip link set lo up
 # QEMU user-mode networking provides DHCP at 10.0.2.2 and DNS at 10.0.2.3
 # Find the virtio network interface and configure it via DHCP
 for iface in /sys/class/net/*/; do
