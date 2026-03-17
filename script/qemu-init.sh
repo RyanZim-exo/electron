@@ -24,8 +24,10 @@ echo "127.0.0.1 electron-test" >> /etc/hosts
 cat /proc/sys/kernel/random/uuid | tr -d '-' > /etc/machine-id
 
 echo "Configuring network"
-# Network interface (eth0) is configured by the kernel ip= boot parameter.
-# We only need to set up DNS here.
+ip link set lo up
+ip link set eth0 up
+ip addr add 10.0.2.15/24 dev eth0
+ip route add default via 10.0.2.2
 # QEMU SLIRP provides a DNS forwarder at 10.0.2.3
 echo "nameserver 10.0.2.3" > /etc/resolv.conf
 echo "Network configuration complete"
